@@ -11,6 +11,8 @@ def main():
             break
         response = agent.run(user_input)
         print("Assistant: " + response)
+        print("\n=================")
+        print()
 
 
 if __name__ == "__main__":

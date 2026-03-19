@@ -8,8 +8,9 @@ from openai import OpenAI
 from tools import execute_tool, get_tools_schema
 
 # 生成日志文件名
+os.makedirs("logs", exist_ok=True)
 log_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-log_file = f"logs/agent_{log_time}.log"
+log_file = f"logs/nanoagent_{log_time}.log"
 
 # 配置日志
 logging.basicConfig(
@@ -139,8 +140,18 @@ class CodeAgent:
                 logger.error(f"Failed to parse tool args: {tool_args}")
                 return f"Error: Failed to parse tool arguments"
 
+        # 在终端显示工具调用信息
+        print("\n=== Tool Call ===")
+        print(f"[Tool Call] {tool_name} with args: {tool_args}")
+
         logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
         result = execute_tool(tool_name, tool_args)
+
+        # 在终端显示工具执行结果
+        print("\n=== Tool Result ===")
+        print(f"[Tool Result] {result}")
+        print("=================\n")
+
         logger.info(f"Tool execution result: {result}")
         return result
 
