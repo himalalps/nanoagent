@@ -28,12 +28,23 @@ class CodeAgent:
         self.client = OpenAI(
             base_url=os.getenv("base_url"), api_key=os.getenv("api_key")
         )
-        self.model = os.getenv("model")
         self.previous_response_id = None
         self.tools_schema = get_tools_schema()
         self.messages = []  # 历史消息列表
         self.total_tokens = 0  # 总 token 数
         self.reasoning_tokens = 0  # 推理 token 数
+
+        # 从环境变量中读取 model
+        self.model = os.getenv("model", "gpt-5-mini")
+
+        # Compact strategy 设置
+        self.max_tokens = int(os.getenv("max_tokens", "8000"))  # 最大 token 限制
+        compact_ratio = float(os.getenv("compact_ratio", "0.75"))  # 触发 compact 的比例
+        self.compact_threshold = int(
+            self.max_tokens * compact_ratio
+        )  # 计算触发 compact 的阈值
+        self.current_prompt_tokens = 0  # 当前 prompt tokens 数
+
         # 添加系统消息
         self.messages.append(
             {
@@ -50,6 +61,9 @@ class CodeAgent:
         # 添加用户输入到历史消息
         self.messages.append({"role": "user", "content": user_input})
 
+        # 检查是否需要 compact
+        self._check_compact()
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=self.messages,
@@ -62,6 +76,11 @@ class CodeAgent:
             usage = response.usage
             current_completion_tokens = usage.completion_tokens
             self.total_tokens += current_completion_tokens
+
+            # 更新当前 prompt tokens 数
+            if hasattr(usage, "prompt_tokens"):
+                self.current_prompt_tokens = usage.prompt_tokens
+                logger.info(f"Current prompt tokens: {self.current_prompt_tokens}")
 
             # 记录推理 token 数
             if hasattr(usage, "reasoning_tokens"):
@@ -169,6 +188,9 @@ class CodeAgent:
                 }
             )
 
+        # 检查是否需要 compact
+        self._check_compact()
+
         # 使用完整的历史消息调用 API
         response = self.client.chat.completions.create(
             model=self.model,
@@ -182,6 +204,11 @@ class CodeAgent:
             usage = response.usage
             current_completion_tokens = usage.completion_tokens
             self.total_tokens += current_completion_tokens
+
+            # 更新当前 prompt tokens 数
+            if hasattr(usage, "prompt_tokens"):
+                self.current_prompt_tokens = usage.prompt_tokens
+                logger.info(f"Current prompt tokens: {self.current_prompt_tokens}")
 
             # 记录推理 token 数
             if hasattr(usage, "reasoning_tokens"):
@@ -197,6 +224,70 @@ class CodeAgent:
 
         logger.info(f"Model response received for tool results: {response}")
         return self._process_response(response)
+
+    def _check_compact(self):
+        """检查是否需要压缩对话历史"""
+        if self.current_prompt_tokens > self.compact_threshold:
+            logger.info(
+                f"Prompt tokens ({self.current_prompt_tokens}) exceed threshold ({self.compact_threshold}), performing compact"
+            )
+            self._compact_messages()
+
+    def _compact_messages(self):
+        """压缩对话历史，保持系统消息并总结之前的对话"""
+        # 保留系统消息
+        system_message = None
+        for msg in self.messages:
+            if msg.get("role") == "system":
+                system_message = msg
+                break
+
+        # 提取除系统消息外的所有消息
+        non_system_messages = [
+            msg for msg in self.messages if msg.get("role") != "system"
+        ]
+
+        # 构建总结请求
+        summary_prompt = (
+            "请总结以下对话历史，保留关键信息和决策，忽略不重要的细节：\n\n"
+        )
+        for msg in non_system_messages:
+            role = msg.get("role")
+            content = msg.get("content", "")
+            summary_prompt += f"{role}: {content}\n"
+
+        # 调用模型进行总结
+        summary_response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "你是一个对话总结助手，负责简洁地总结对话历史",
+                },
+                {"role": "user", "content": summary_prompt},
+            ],
+        )
+
+        # 获取总结结果
+        summary = ""
+        if hasattr(summary_response, "choices") and len(summary_response.choices) > 0:
+            message = summary_response.choices[0].message
+            if hasattr(message, "content"):
+                summary = message.content
+
+        logger.info(f"Compact summary: {summary}")
+
+        # 重建 messages 列表：系统消息 + 总结 + 最新的用户输入
+        self.messages = []
+        if system_message:
+            self.messages.append(system_message)
+
+        # 添加总结作为 assistant 消息
+        self.messages.append({"role": "assistant", "content": f"[对话总结] {summary}"})
+
+        # 重置 prompt tokens 计数
+        self.current_prompt_tokens = 0
+        logger.info("Messages compacted successfully")
 
 
 # 加载环境变量的辅助函数
