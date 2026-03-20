@@ -12,6 +12,11 @@ def main():
         response = agent.run(user_input)
         print("Assistant: " + response.strip())
         print("\n=================")
+        # 显示当前上下文使用情况
+        context_usage = agent.get_context_usage()
+        print(
+            f"Context usage: {context_usage['current_tokens']}/{context_usage['threshold']} tokens ({context_usage['percentage']}%)"
+        )
 
 
 if __name__ == "__main__":
