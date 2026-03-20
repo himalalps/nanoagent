@@ -1,5 +1,7 @@
 import logging
 
+from prompts import CompactionPrompt, SystemPrompt
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,41 +47,19 @@ class ContextManager:
 
     def compact_messages(self, client, model):
         """压缩对话历史，保持系统消息并总结之前的对话"""
-        # 保留系统消息
-        system_message = None
-        for msg in self.messages:
-            if msg.get("role") == "system":
-                system_message = msg
-                break
-
-        # 提取除系统消息外的所有消息
-        non_system_messages = [
-            msg for msg in self.messages if msg.get("role") != "system"
-        ]
-
-        # 构建总结请求，将所有非系统消息完整传递
-        summary_prompt = ""
-        for msg in non_system_messages:
-            role = msg.get("role")
-            content = msg.get("content", "")
-            summary_prompt += f"{role}: {content}\n"
-
         # 添加用户指定的总结prompt
-        summary_prompt += (
-            "\n"
-            + """You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include: 1. **Task Overview**   - The user's core request and success criteria   - Any clarifications or constraints they specified 2. **Current State**   - What has been completed so far   - Files created, modified, or analyzed (with paths if relevant)   - Key outputs or artifacts produced 3. **Important Discoveries**   - Technical constraints or requirements uncovered   - Decisions made and their rationale   - Errors encountered and how they were resolved   - What approaches were tried that didn't work (and why) 4. **Next Steps**   - Specific actions needed to complete the task   - Any blockers or open questions to resolve   - Priority order if multiple steps remain 5. **Context to Preserve**   - User preferences or style requirements   - Domain-specific details that aren't obvious   - Any promises made to the user Be concise but complete—err on the side of including information that would prevent duplicate work or repeated mistakes. Write in a way that enables immediate resumption of the task. Wrap your summary in <summary></summary> tags."""
-        )
+        compaction_prompt = CompactionPrompt()
+        messages = []
+        messages.append({"role": "system", "content": compaction_prompt.system_render()})
+        for msg in self.messages:
+            if msg.get("role") != "system":
+                messages.append(msg)
+        messages.append({"role": "user", "content": compaction_prompt.user_render()})
 
         # 调用模型进行总结
         summary_response = client.chat.completions.create(
             model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "你是一个对话总结助手，负责根据对话历史生成结构化的总结",
-                },
-                {"role": "user", "content": summary_prompt},
-            ],
+            messages=messages,
         )
 
         # 获取总结结果
@@ -96,11 +76,13 @@ class ContextManager:
 
         # 重建 messages 列表：系统消息 + 总结 + 最新的用户输入
         self.messages = []
-        if system_message:
-            self.messages.append(system_message)
+        system_prompt = SystemPrompt()
+        self.messages.append({"role": "system", "content": system_prompt.system_render()})
 
         # 合并总结和最新用户输入为一个消息
-        combined_content = f"对话历史已压缩，以下是总结和最新输入：\n{summary}\n\n<user_input>\n{self.latest_user_input}\n</user_input>"
+        combined_content = system_prompt.continue_prompt(
+            summary=summary, latest_user_input=self.latest_user_input
+        )
         logger.info(combined_content)
         self.messages.append({"role": "user", "content": combined_content})
 

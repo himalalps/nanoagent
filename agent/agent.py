@@ -8,6 +8,7 @@ from agent.context_management import ContextManager
 from agent.response_processor import ResponseProcessor
 from agent.token_management import TokenManager
 from agent.utils import load_dotenv
+from prompts import SystemPrompt
 from tools import get_tools_schema
 
 # 生成日志文件名
@@ -52,10 +53,11 @@ class CodeAgent:
         )
 
         # 添加系统消息
+        system_prompt = SystemPrompt()
         self.context_manager.messages.append(
             {
                 "role": "system",
-                "content": "You are a helpful assistant that can use tools to complete tasks.",
+                "content": system_prompt.system_render(),
             }
         )
         logger.info(
