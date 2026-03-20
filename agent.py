@@ -58,6 +58,15 @@ class CodeAgent:
         )
 
         # 记录 token 使用情况
+        self._record_token_usage(response)
+
+        logger.info(f"Model response received: {response}")
+        result = self._process_response(response)
+        logger.info(f"Final response: {result}")
+        return result
+
+    def _record_token_usage(self, response):
+        """记录 token 使用情况"""
         if hasattr(response, "usage"):
             usage = response.usage
             current_completion_tokens = usage.completion_tokens
@@ -74,11 +83,6 @@ class CodeAgent:
                 logger.info(
                     f"Token usage: completion={current_completion_tokens}, Total tokens: {self.total_tokens}"
                 )
-
-        logger.info(f"Model response received: {response}")
-        result = self._process_response(response)
-        logger.info(f"Final response: {result}")
-        return result
 
     def _process_response(self, response) -> str:
         """处理模型响应"""
@@ -101,6 +105,13 @@ class CodeAgent:
 
         if tool_calls:
             logger.info(f"Tool calls detected: {len(tool_calls)}")
+            # 输出模型的 content 和 reasoning
+            if hasattr(message, "content") and message.content:
+                print("\n=== Model Content ===")
+                print(f"[Content] {message.content.strip()}")
+            if hasattr(message, "reasoning") and message.reasoning:
+                print("\n=== Model Reasoning ===")
+                print(f"[Reasoning] {message.reasoning.strip()}")
             results = []
             for tool_call in tool_calls:
                 result = self._handle_tool_call(tool_call)
@@ -149,8 +160,8 @@ class CodeAgent:
 
         # 在终端显示工具执行结果
         print("\n=== Tool Result ===")
-        print(f"[Tool Result] {result}")
-        print("=================\n")
+        print(f"[Tool Result] {result.strip()}")
+        print("=================")
 
         logger.info(f"Tool execution result: {result}")
         return result
@@ -178,22 +189,7 @@ class CodeAgent:
         )
 
         # 记录 token 使用情况
-        if hasattr(response, "usage"):
-            usage = response.usage
-            current_completion_tokens = usage.completion_tokens
-            self.total_tokens += current_completion_tokens
-
-            # 记录推理 token 数
-            if hasattr(usage, "reasoning_tokens"):
-                current_reasoning_tokens = usage.reasoning_tokens
-                self.reasoning_tokens += current_reasoning_tokens
-                logger.info(
-                    f"Token usage: completion={current_completion_tokens}, reasoning={current_reasoning_tokens}, Total tokens: {self.total_tokens}, Total reasoning: {self.reasoning_tokens}"
-                )
-            else:
-                logger.info(
-                    f"Token usage: completion={current_completion_tokens}, Total tokens: {self.total_tokens}"
-                )
+        self._record_token_usage(response)
 
         logger.info(f"Model response received for tool results: {response}")
         return self._process_response(response)

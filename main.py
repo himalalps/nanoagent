@@ -10,9 +10,8 @@ def main():
             print("Goodbye!")
             break
         response = agent.run(user_input)
-        print("Assistant: " + response)
+        print("Assistant: " + response.strip())
         print("\n=================")
-        print()
 
 
 if __name__ == "__main__":
