@@ -25,7 +25,13 @@
       uv sync
    ```
 
-3. 运行项目：
+3. 配置环境变量：
+   ```bash
+      cp .env.example .env
+   ```
+   然后编辑 `.env` 文件添加您的配置详情。
+
+4. 运行项目：
    ```bash   
    uv run main.py
    ```

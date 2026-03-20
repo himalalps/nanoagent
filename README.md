@@ -25,7 +25,13 @@ An interactive agent project that allows users to run and interact with an AI ag
       uv sync
    ```
 
-3. Run the project:
+3. Configure environment variables:
+   ```bash
+      cp .env.example .env
+   ```
+   Then edit the `.env` file to add your configuration details.
+
+4. Run the project:
    ```bash   
    uv run main.py
    ```
