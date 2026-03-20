@@ -70,6 +70,8 @@ class CodeAgent:
         """处理用户输入并返回响应"""
         logger.info(f"User input: {user_input}")
 
+        # 更新最新的用户输入
+        self.context_manager.update_latest_user_input(user_input)
         # 添加用户输入到历史消息
         self.context_manager.messages.append({"role": "user", "content": user_input})
 

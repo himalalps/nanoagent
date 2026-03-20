@@ -11,6 +11,7 @@ class ContextManager:
         self.compact_threshold = compact_threshold
         self.messages = []
         self.current_total_tokens = 0
+        self.latest_user_input = None
 
     def get_context_usage(self):
         """获取当前上下文使用情况"""
@@ -26,6 +27,10 @@ class ContextManager:
             "threshold": self.max_tokens,
             "percentage": 0,
         }
+
+    def update_latest_user_input(self, user_input):
+        """更新最新的用户输入"""
+        self.latest_user_input = user_input
 
     def check_compact(self):
         """检查是否需要压缩对话历史"""
@@ -89,15 +94,15 @@ class ContextManager:
         if start_idx != -1 and end_idx != -1:
             summary = summary[start_idx : end_idx + len("</summary>")].strip()
 
-        logger.info(f"Compact summary: {summary}")
-
         # 重建 messages 列表：系统消息 + 总结 + 最新的用户输入
         self.messages = []
         if system_message:
             self.messages.append(system_message)
 
-        # 添加总结作为 user 消息
-        self.messages.append({"role": "user", "content": summary})
+        # 合并总结和最新用户输入为一个消息
+        combined_content = f"对话历史已压缩，以下是总结和最新输入：\n{summary}\n\n<user_input>\n{self.latest_user_input}\n</user_input>"
+        logger.info(combined_content)
+        self.messages.append({"role": "user", "content": combined_content})
 
         # 重置 token 计数
         self.current_total_tokens = 0
