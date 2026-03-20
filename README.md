@@ -1,45 +1,40 @@
-# CodeAgent
+# nanoagent
 
-一个用于交互式运行 CodeAgent 的示例项目。main.py 会创建一个 CodeAgent 并在终端中与用户交互。
+An interactive agent project that allows users to run and interact with an AI agent in the terminal. main.py creates a CodeAgent and provides a command-line interface for user interaction.
 
-## 目录结构
-- agent.py — CodeAgent 的实现
-- main.py — 程序入口，命令行交互界面
-- tests/ — 单元测试
-- tools/ — 辅助工具
-- logs/ — 运行产生的日志
+## Directory Structure
+- agent.py — Implementation of CodeAgent
+- main.py — Program entry point, command-line interactive interface
+- tests/ — Unit tests
+- tools/ — Helper tools
+- logs/ — Runtime logs
 
-## 需求
-- Python 3.8+
-- (可选) 虚拟环境
+## Requirements
+- Python 3.12+
+- (Optional) Virtual environment
 
-## 安装与运行
-1. 克隆仓库并进入目录：
+## Installation and Running
+1. Clone the repository and navigate to the directory:
    git clone <repo-url>
    cd <repo-dir>
 
-2. 创建并激活虚拟环境（可选）：
-   python -m venv .venv
-   source .venv/bin/activate  # macOS / Linux
-   .venv\Scripts\activate     # Windows
+2. Install dependencies using uv:
+   uv install
 
-3. 安装依赖（如果有）：
-   pip install -r requirements.txt
-
-4. 运行项目：
+3. Run the project:
    python main.py
 
-   在运行后，输入用户消息进行交互。输入 `/exit` 退出。
+   After running, enter user messages for interaction. Type `/exit` to quit.
 
-## 测试
-运行测试（如果已配置）：
+## Testing
+Run tests (if configured):
    pytest
 
-## 日志
-运行时日志会写入 logs/ 目录（如果 agent 实现了日志功能）。
+## Logs
+Runtime logs are written to the logs/ directory (if the agent implements logging functionality).
 
-## 贡献
-欢迎提交 issue 或 pull request。
+## Contributing
+Welcome to submit issues or pull requests.
 
-## 许可证
-请在此处添加许可证信息（例如 MIT）。
+## License
+Please add license information here (e.g., MIT).
