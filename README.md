@@ -15,26 +15,34 @@ An interactive agent project that allows users to run and interact with an AI ag
 
 ## Installation and Running
 1. Clone the repository and navigate to the directory:
-   git clone <repo-url>
-   cd <repo-dir>
+   ```bash
+      git clone git@github.com:himalalps/nanoagent.git
+      cd nanoagent
+   ```
 
 2. Install dependencies using uv:
-   uv install
+   ```bash  
+      uv sync
+   ```
 
 3. Run the project:
-   python main.py
+   ```bash   
+   uv run main.py
+   ```
 
    After running, enter user messages for interaction. Type `/exit` to quit.
 
 ## Testing
 Run tests (if configured):
-   pytest
+   ```bash
+      pytest
+   ```
 
 ## Logs
-Runtime logs are written to the logs/ directory (if the agent implements logging functionality).
+Runtime logs are written to the `logs/` directory (if the agent implements logging functionality).
 
 ## Contributing
 Welcome to submit issues or pull requests.
 
 ## License
-Please add license information here (e.g., MIT).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
