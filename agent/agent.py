@@ -102,8 +102,44 @@ class CodeAgent:
             response, self.client, self.model
         )
 
+        # 如果 result 为空，重新调用 create
+        if not result:
+            logger.warning("Empty response received, retrying...")
+            result = self._retry_create()
+
         logger.info(f"Final response: {result}")
         return result
+
+    def _retry_create(self) -> str:
+        """重新调用 create 方法获取响应"""
+        max_retries = 2  # 最多重试2次
+
+        for attempt in range(max_retries):
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=self.context_manager.messages,
+                tools=self.tools_schema,
+                tool_choice="auto",
+            )
+
+            # 记录 token 使用情况
+            current_total = self.token_manager.record_token_usage(response)
+            # 更新 context_manager 中的 current_total_tokens
+            self.context_manager.current_total_tokens = current_total
+
+            logger.info(f"Retry {attempt + 1} model response received: {response}")
+            result = self.response_processor.process_response(
+                response, self.client, self.model
+            )
+
+            if result:
+                return result
+
+            logger.warning(
+                f"Retry {attempt + 1} still returned empty response, trying again..."
+            )
+
+        return ""
 
     def get_context_usage(self):
         """获取当前上下文使用情况"""
